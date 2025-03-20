@@ -5,7 +5,7 @@ import { Toaster } from "sonner";
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster/>
       <Component {...pageProps} />
     </>
   );
