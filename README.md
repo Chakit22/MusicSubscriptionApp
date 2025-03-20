@@ -1,8 +1,7 @@
 # How to Run
 
-## Run the following commands in your IDE
+## Run the following commands in your IDE after cloning the repo
 
-- `git clone https://github.com/Chakit22/MusicSubscriptionApp.git`
 - `npm install`
 - `npm run dev`
 
