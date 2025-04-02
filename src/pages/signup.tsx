@@ -13,12 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-// import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function RegisterForm() {
-  // const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -28,9 +26,31 @@ export default function RegisterForm() {
 
   const onSubmit = handleSubmit(async (data) => {
     console.log("Form data : ", data);
-    // Writing the APIs for form registeration and stuff
 
-    toast.success("User Registered sucesfully!");
+    try {
+     
+      const response = await fetch('https://br7w7xmjgh.execute-api.us-east-1.amazonaws.com/prod/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data), 
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        
+        toast.error(result.message || "An error occurred during registration.");
+      } else {
+       
+        toast.success("User registered successfully!");
+        setTimeout(() => window.location.replace('/signin'), 2000); 
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      toast.error("Failed to register. Please try again.");
+    }
   });
 
   return (
@@ -91,10 +111,6 @@ export default function RegisterForm() {
                   placeholder="Password"
                   {...register("password", {
                     required: "Password is required",
-                    minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
-                    },
                   })}
                 />
                 <div onClick={() => setIsPasswordVisible(!isPasswordVisible)}>
