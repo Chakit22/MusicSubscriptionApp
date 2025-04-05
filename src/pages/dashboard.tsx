@@ -12,20 +12,20 @@ export default function Dashboard() {
 
   // Check if user is logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem("user_name");
-    if (storedUser) {
-      setUserName(storedUser);
-    } else {
-      toast.error("Unauthorized access! Redirecting to login...");
-      router.push("/signin");
-    }
+    // const storedUser = localStorage.getItem("user_name");
+    // if (storedUser) {
+    //   setUserName(storedUser);
+    // } else {
+    //   toast.error("Unauthorized access! Redirecting to login...");
+    //   router.push("/signin");
+    // }
   }, [router]);
 
   // Logout function
   const handleLogout = () => {
     localStorage.removeItem("user_name");
     toast.success("Logged out successfully!");
-    router.push("/signin");
+    router.replace("/signin");
   };
 
   return (
@@ -37,7 +37,9 @@ export default function Dashboard() {
         <CardContent className="flex flex-col items-center gap-4">
           <h2 className="text-lg">Welcome Back, {userName} 🎉</h2>
           <p className="text-gray-500">You have successfully logged in.</p>
-          <Button onClick={handleLogout} className="mt-4">Logout</Button>
+          <Button onClick={handleLogout} className="mt-4">
+            Logout
+          </Button>
         </CardContent>
       </Card>
     </div>
