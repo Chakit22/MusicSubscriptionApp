@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation"; // 
+import { useRouter } from "next/navigation";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function SignInForm() {
   const onSubmit = handleSubmit(async (data) => {
     console.log("Submitting Form Data:", data);
     setLoading(true);
-    
+
     try {
       const response = await fetch(
         "https://fm1elj060k.execute-api.us-east-1.amazonaws.com/prod/login",
@@ -38,7 +38,7 @@ export default function SignInForm() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Accept": "application/json",
+            Accept: "application/json",
           },
           body: JSON.stringify({
             email: data.email,
@@ -52,7 +52,7 @@ export default function SignInForm() {
         localStorage.setItem("user_name", result.user_name);
         toast.success(`Welcome, ${result.user_name}! Redirecting...`);
         setTimeout(() => {
-          router.push("/dashboard"); 
+          router.replace("/dashboard");
         }, 1500);
       } else {
         toast.error(result.message || "Invalid credentials, try again.");
@@ -129,7 +129,7 @@ export default function SignInForm() {
             </Link>
           </div>
           <Button onClick={onSubmit} disabled={loading}>
-            {loading ? "Logging in..." : "Login"} 
+            {loading ? "Logging in..." : "Login"}
           </Button>
         </CardFooter>
       </Card>

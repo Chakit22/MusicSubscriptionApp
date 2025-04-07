@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Search, LogOut, X, Plus } from "lucide-react";
@@ -16,59 +16,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useSubscription } from "@/hooks/useSubscription";
+import { Song } from "@/types";
 
 // Mock data for demonstration purposes
 const mockUser = {
   user_name: "JohnDoe0",
+  email: "johndoe@example.com",
 };
 
-const mockSubscriptions = [
+// Mock songs for search results
+const mockSongs = [
   {
-    id: "1",
     title: "Rivers of Babylon",
-    artist: "Boney M.",
-    year: "1978",
-    album: "Nightflight to Venus",
+    artist: "The Melodians",
+    year: "1970",
+    album: "Rivers of Babylon",
     image_url: "/placeholder.svg?height=100&width=100",
   },
   {
-    id: "2",
-    title: "Fearless",
-    artist: "Taylor Swift",
-    year: "2008",
-    album: "Fearless",
-    image_url: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: "1",
-    title: "Rivers of Babylon",
-    artist: "Boney M.",
-    year: "1978",
-    album: "Nightflight to Venus",
-    image_url: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: "2",
-    title: "Fearless",
-    artist: "Taylor Swift",
-    year: "2008",
-    album: "Fearless",
-    image_url: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: "1",
-    title: "Rivers of Babylon",
-    artist: "Boney M.",
-    year: "1978",
-    album: "Nightflight to Venus",
-    image_url: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: "2",
-    title: "Fearless",
-    artist: "Taylor Swift",
-    year: "2008",
-    album: "Fearless",
+    title: "White Blood Cells",
+    artist: "The White Stripes",
+    year: "2001",
+    album: "White Blood Cells",
     image_url: "/placeholder.svg?height=100&width=100",
   },
 ];
@@ -76,8 +46,8 @@ const mockSubscriptions = [
 export default function MainPage() {
   const router = useRouter();
   const [user] = useState(mockUser);
-  const [subscriptions, setSubscriptions] = useState(mockSubscriptions);
-  const [searchResults, setSearchResults] = useState<any>([]);
+  const [subscriptions, setSubscriptions] = useState<Song[]>([]);
+  const [searchResults, setSearchResults] = useState<Song[]>([]);
   const [searchParams, setSearchParams] = useState({
     title: "",
     artist: "",
@@ -86,14 +56,42 @@ export default function MainPage() {
   });
   const [noResults, setNoResults] = useState(false);
 
+  const {
+    loading,
+    error,
+    subscribeToSong,
+    unsubscribeFromSong,
+    getSubscribedSongs,
+  } = useSubscription(user.email);
+
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      const songs = await getSubscribedSongs();
+      setSubscriptions(songs);
+    };
+
+    fetchSubscriptions();
+  }, [getSubscribedSongs]);
+
   const handleLogout = () => {
     // In a real implementation, this would clear the session/auth state
     router.replace("/signin");
   };
 
-  const handleRemoveSubscription = (id: any) => {
-    // In a real implementation, this would call the API to remove the subscription
-    setSubscriptions(subscriptions.filter((sub) => sub.id !== id));
+  const handleRemoveSubscription = async (song: Song) => {
+    const success = await unsubscribeFromSong(song);
+    if (success) {
+      setSubscriptions(
+        subscriptions.filter(
+          (sub) =>
+            !(
+              sub.title === song.title &&
+              sub.album === song.album &&
+              sub.artist === song.artist
+            )
+        )
+      );
+    }
   };
 
   const handleSearch = () => {
@@ -107,29 +105,8 @@ export default function MainPage() {
       return;
     }
 
-    // Mock search functionality
-    // In a real implementation, this would query DynamoDB through API Gateway and Lambda
-    const mockResults = [
-      {
-        id: "3",
-        title: "Rivers of Babylon",
-        artist: "The Melodians",
-        year: "1970",
-        album: "Rivers of Babylon",
-        image_url: "/placeholder.svg?height=100&width=100",
-      },
-      {
-        id: "4",
-        title: "White Blood Cells",
-        artist: "The White Stripes",
-        year: "2001",
-        album: "White Blood Cells",
-        image_url: "/placeholder.svg?height=100&width=100",
-      },
-    ];
-
     // Simple filtering logic for demonstration
-    const filteredResults = mockResults.filter((item) => {
+    const filteredResults = mockSongs.filter((item) => {
       return (
         (!searchParams.title ||
           item.title
@@ -149,18 +126,27 @@ export default function MainPage() {
     setNoResults(filteredResults.length === 0);
   };
 
-  const handleSubscribe = (song: any) => {
+  const handleSubscribe = async (song: Song) => {
     // Check if already subscribed
-    if (subscriptions.some((sub) => sub.id === song.id)) {
+    const isAlreadySubscribed = subscriptions.some(
+      (sub) =>
+        sub.title === song.title &&
+        sub.album === song.album &&
+        sub.artist === song.artist
+    );
+
+    if (isAlreadySubscribed) {
       alert("You are already subscribed to this song");
       return;
     }
 
-    // In a real implementation, this would call the API to add the subscription
-    setSubscriptions([...subscriptions, song]);
+    const success = await subscribeToSong(song);
+    if (success) {
+      setSubscriptions([...subscriptions, song]);
+    }
   };
 
-  const handleInputChange = (e: any) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setSearchParams({
       ...searchParams,
@@ -198,162 +184,194 @@ export default function MainPage() {
         <div className="grid gap-8 md:grid-cols-2">
           {/* Subscription Area */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold tracking-tight">
-              Your Subscriptions
-            </h2>
-            {subscriptions.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-8 text-center">
-                <p className="text-muted-foreground">
-                  You haven't subscribed to any songs yet. Use the query area to
-                  find and subscribe to songs.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {subscriptions.slice(0, 5).map((subscription) => (
-                  <Card key={subscription.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-4">
-                        <Image
-                          src={subscription.image_url || "/placeholder.svg"}
-                          alt={`${subscription.artist} - ${subscription.album}`}
-                          width={80}
-                          height={80}
-                          className="rounded-md object-cover"
-                        />
-                        <div className="flex-1 space-y-1">
-                          <h3 className="font-medium">{subscription.title}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Artist: {subscription.artist}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Album: {subscription.album}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Year: {subscription.year}
-                          </p>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() =>
-                            handleRemoveSubscription(subscription.id)
-                          }
-                          className="h-8 gap-1"
-                        >
-                          <X className="h-4 w-4" />
-                          Remove
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Query Area */}
-          <section className="space-y-4">
-            <h2 className="text-2xl font-bold tracking-tight">Find Music</h2>
-            <Card>
-              <CardContent className="p-4 space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label htmlFor="title" className="text-sm font-medium">
-                      Title
-                    </label>
-                    <Input
-                      id="title"
-                      name="title"
-                      placeholder="Enter song title"
-                      value={searchParams.title}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="artist" className="text-sm font-medium">
-                      Artist
-                    </label>
-                    <Input
-                      id="artist"
-                      name="artist"
-                      placeholder="Enter artist name"
-                      value={searchParams.artist}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="year" className="text-sm font-medium">
-                      Year
-                    </label>
-                    <Input
-                      id="year"
-                      name="year"
-                      placeholder="Enter release year"
-                      value={searchParams.year}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="album" className="text-sm font-medium">
-                      Album
-                    </label>
-                    <Input
-                      id="album"
-                      name="album"
-                      placeholder="Enter album name"
-                      value={searchParams.album}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-                <Button onClick={handleSearch} className="w-full gap-2">
-                  <Search className="h-4 w-4" />
-                  Query
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="font-medium">Search Results</h3>
+            <h2 className="text-2xl font-bold">My Subscriptions</h2>
+            {loading ? (
+              <p>Loading subscriptions...</p>
+            ) : error ? (
+              <p className="text-red-500">{error}</p>
+            ) : subscriptions.length > 0 ? (
+              <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Image</TableHead>
+                      <TableHead className="w-[100px]"></TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Artist</TableHead>
                       <TableHead>Album</TableHead>
                       <TableHead>Year</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {searchResults.map((result: any) => (
-                      <TableRow key={result.id}>
+                    {subscriptions.map((subscription, index) => (
+                      <TableRow key={index}>
                         <TableCell>
                           <Image
-                            src={result.image_url || "/placeholder.svg"}
-                            alt={`${result.artist} - ${result.album}`}
-                            width={40}
-                            height={40}
-                            className="rounded-md object-cover"
+                            src={subscription.image_url}
+                            alt={subscription.title}
+                            width={50}
+                            height={50}
+                            className="rounded"
                           />
                         </TableCell>
-                        <TableCell>{result.title}</TableCell>
+                        <TableCell className="font-medium">
+                          {subscription.title}
+                        </TableCell>
+                        <TableCell>{subscription.artist}</TableCell>
+                        <TableCell>{subscription.album}</TableCell>
+                        <TableCell>{subscription.year}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              handleRemoveSubscription(subscription)
+                            }
+                            className="text-red-500 hover:text-red-700"
+                            aria-label="Remove subscription"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center p-6">
+                  <div className="text-center">
+                    <h3 className="mt-2 text-xl font-semibold">
+                      No Subscriptions Yet
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Subscribe to songs to see them here.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </section>
+
+          {/* Search Area */}
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold">Find Songs</h2>
+            <div className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="title"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Title
+                  </label>
+                  <Input
+                    id="title"
+                    name="title"
+                    placeholder="Song title"
+                    value={searchParams.title}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="artist"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Artist
+                  </label>
+                  <Input
+                    id="artist"
+                    name="artist"
+                    placeholder="Artist name"
+                    value={searchParams.artist}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="year"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Year
+                  </label>
+                  <Input
+                    id="year"
+                    name="year"
+                    placeholder="Release year"
+                    value={searchParams.year}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="album"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Album
+                  </label>
+                  <Input
+                    id="album"
+                    name="album"
+                    placeholder="Album name"
+                    value={searchParams.album}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={handleSearch}
+                className="w-full gap-2"
+                disabled={loading}
+              >
+                <Search className="h-4 w-4" />
+                Search
+              </Button>
+            </div>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[100px]"></TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Artist</TableHead>
+                      <TableHead>Album</TableHead>
+                      <TableHead>Year</TableHead>
+                      <TableHead className="w-[100px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {searchResults.map((result, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Image
+                            src={result.image_url}
+                            alt={result.title}
+                            width={50}
+                            height={50}
+                            className="rounded"
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {result.title}
+                        </TableCell>
                         <TableCell>{result.artist}</TableCell>
                         <TableCell>{result.album}</TableCell>
                         <TableCell>{result.year}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell>
                           <Button
-                            variant="outline"
-                            size="sm"
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleSubscribe(result)}
-                            className="h-8 gap-1"
+                            className="text-green-500 hover:text-green-700"
+                            aria-label="Subscribe to song"
+                            disabled={loading}
                           >
                             <Plus className="h-4 w-4" />
-                            Subscribe
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -363,13 +381,17 @@ export default function MainPage() {
               </div>
             )}
 
-            {/* No Results Message */}
             {noResults && (
-              <div className="rounded-lg border border-dashed p-8 text-center">
-                <p className="text-muted-foreground">
-                  No result is retrieved. Please query again.
-                </p>
-              </div>
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center p-6">
+                  <div className="text-center">
+                    <h3 className="mt-2 text-xl font-semibold">No Results</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Try adjusting your search criteria.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </section>
         </div>
