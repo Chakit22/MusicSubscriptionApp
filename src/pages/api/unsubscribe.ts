@@ -1,24 +1,41 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Subscription } from "@/types";
+import { SubscriptionPayload } from "@/types";
+import axios from "axios";
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== "DELETE") {
+    return res.status(405).json({ status: 405, message: "Method not allowed" });
   }
 
   try {
-    const subscription = req.body as Subscription;
+    const body = req.body as SubscriptionPayload;
 
-    // In a real implementation, this would remove from database
-    // Mocking successful unsubscription
+    const payload = {
+      httpMethod: "DELETE",
+      path: "/unsubscribe",
+      body: JSON.stringify(body),
+    };
 
-    return res.status(200).json({
-      success: true,
-      message: "Successfully unsubscribed from song",
+    const response = await axios.delete(
+      `${process.env.SUBSCRIPTIONS_LAMBDA_URL}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: payload,
+      }
+    );
+
+    return res.status(response.data.statusCode).json({
+      status: response.data.statusCode,
+      message: response.data.body,
     });
   } catch (error) {
     return res.status(500).json({
-      success: false,
+      status: 500,
       message: "Failed to unsubscribe from song",
     });
   }

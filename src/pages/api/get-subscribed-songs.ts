@@ -10,23 +10,21 @@ export default async function handler(
   }
 
   try {
-    const { email, title, album, artist, year } = req.query;
+    const { email } = req.query;
 
     const response = await axios.get(
       `${process.env.SUBSCRIPTIONS_LAMBDA_URL}`,
-      {
-        params: { email, title, album, artist, year },
-      }
+      { params: { email } }
     );
 
     return res.status(response.data.statusCode).json({
       status: response.data.statusCode,
-      message: response.data.body,
+      songs: response.data.body,
     });
   } catch (error) {
     return res.status(500).json({
       status: 500,
-      message: "Failed to check subscription status",
+      message: "Failed to retrieve subscribed songs",
     });
   }
 }

@@ -1,24 +1,41 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { Subscription } from "@/types";
+import { SubscriptionPayload } from "@/types";
+import axios from "axios";
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return res.status(405).json({ status: 405, message: "Method not allowed" });
   }
 
   try {
-    const subscription = req.body as Subscription;
+    const body = req.body as SubscriptionPayload;
 
-    // In a real implementation, this would save to database
-    // Mocking successful subscription
+    const payload = {
+      httpMethod: "POST",
+      path: "/subscribe",
+      body: JSON.stringify(body),
+    };
 
-    return res.status(200).json({
-      success: true,
-      message: "Successfully subscribed to song",
+    const response = await axios.post(
+      `${process.env.SUBSCRIPTIONS_LAMBDA_URL}`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return res.status(response.data.statusCode).json({
+      status: response.data.statusCode,
+      message: response.data.body,
     });
   } catch (error) {
     return res.status(500).json({
-      success: false,
+      status: 500,
       message: "Failed to subscribe to song",
     });
   }
