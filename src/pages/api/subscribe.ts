@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { SubscriptionPayload } from "@/types";
+import { APIParams } from "@/types";
 import axios from "axios";
 
 export default async function handler(
@@ -11,13 +11,7 @@ export default async function handler(
   }
 
   try {
-    const body = req.body as SubscriptionPayload;
-
-    const payload = {
-      httpMethod: "POST",
-      path: "/subscribe",
-      body: JSON.stringify(body),
-    };
+    const payload = req.body as APIParams;
 
     const response = await axios.post(
       `${process.env.SUBSCRIPTIONS_LAMBDA_URL}`,
@@ -28,6 +22,10 @@ export default async function handler(
         },
       }
     );
+
+    if (response.data.body.error) {
+      throw new Error(response.data.body.message);
+    }
 
     return res.status(response.data.statusCode).json({
       status: response.data.statusCode,

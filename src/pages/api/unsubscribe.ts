@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { SubscriptionPayload } from "@/types";
+import { APIParams } from "@/types";
 import axios from "axios";
 
 export default async function handler(
@@ -11,23 +11,16 @@ export default async function handler(
   }
 
   try {
-    const body = req.body as SubscriptionPayload;
-
-    const payload = {
-      httpMethod: "DELETE",
-      path: "/unsubscribe",
-      body: JSON.stringify(body),
-    };
+    const payload = req.body as APIParams;
 
     const response = await axios.delete(
       `${process.env.SUBSCRIPTIONS_LAMBDA_URL}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: payload,
-      }
+      { params: payload }
     );
+
+    if (response.data.body.error) {
+      throw new Error(response.data.body.message);
+    }
 
     return res.status(response.data.statusCode).json({
       status: response.data.statusCode,

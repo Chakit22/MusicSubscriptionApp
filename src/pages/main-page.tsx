@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Search, LogOut, X, Plus } from "lucide-react";
+import axios from "axios";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,31 +18,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSubscription } from "@/hooks/useSubscription";
-import { Song } from "@/types";
+import { Song, APIParams } from "@/types";
 
 // Mock data for demonstration purposes
 const mockUser = {
   user_name: "JohnDoe0",
   email: "johndoe@example.com",
 };
-
-// Mock songs for search results
-const mockSongs = [
-  {
-    title: "Rivers of Babylon",
-    artist: "The Melodians",
-    year: "1970",
-    album: "Rivers of Babylon",
-    image_url: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    title: "White Blood Cells",
-    artist: "The White Stripes",
-    year: "2001",
-    album: "White Blood Cells",
-    image_url: "/placeholder.svg?height=100&width=100",
-  },
-];
 
 export default function MainPage() {
   const router = useRouter();
@@ -55,10 +38,12 @@ export default function MainPage() {
     album: "",
   });
   const [noResults, setNoResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     loading,
-    error,
+    error: subscriptionError,
     subscribeToSong,
     unsubscribeFromSong,
     getSubscribedSongs,
@@ -94,7 +79,7 @@ export default function MainPage() {
     }
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     // Check if at least one field is filled
     const hasQuery = Object.values(searchParams).some(
       (param) => param.trim() !== ""
@@ -105,25 +90,65 @@ export default function MainPage() {
       return;
     }
 
-    // Simple filtering logic for demonstration
-    const filteredResults = mockSongs.filter((item) => {
-      return (
-        (!searchParams.title ||
-          item.title
-            .toLowerCase()
-            .includes(searchParams.title.toLowerCase())) &&
-        (!searchParams.artist ||
-          item.artist
-            .toLowerCase()
-            .includes(searchParams.artist.toLowerCase())) &&
-        (!searchParams.year || item.year.includes(searchParams.year)) &&
-        (!searchParams.album ||
-          item.album.toLowerCase().includes(searchParams.album.toLowerCase()))
-      );
-    });
+    setIsSearching(true);
+    setError(null);
 
-    setSearchResults(filteredResults);
-    setNoResults(filteredResults.length === 0);
+    try {
+      // We need to create a mock API for song search
+      // This would typically be a proper API endpoint
+      const payload: APIParams = {
+        httpMethod: "GET",
+        path: "/songs",
+        email: user.email,
+        ...searchParams,
+      };
+
+      // For now, we'll use mock data as a placeholder
+      // In a real app, this would be an actual API call
+      setTimeout(() => {
+        const filteredResults = [
+          {
+            title: "Rivers of Babylon",
+            artist: "The Melodians",
+            year: "1970",
+            album: "Rivers of Babylon",
+            image_url: "/placeholder.svg?height=100&width=100",
+          },
+          {
+            title: "White Blood Cells",
+            artist: "The White Stripes",
+            year: "2001",
+            album: "White Blood Cells",
+            image_url: "/placeholder.svg?height=100&width=100",
+          },
+        ].filter((item) => {
+          return (
+            (!searchParams.title ||
+              item.title
+                .toLowerCase()
+                .includes(searchParams.title.toLowerCase())) &&
+            (!searchParams.artist ||
+              item.artist
+                .toLowerCase()
+                .includes(searchParams.artist.toLowerCase())) &&
+            (!searchParams.year || item.year.includes(searchParams.year)) &&
+            (!searchParams.album ||
+              item.album
+                .toLowerCase()
+                .includes(searchParams.album.toLowerCase()))
+          );
+        });
+
+        setSearchResults(filteredResults);
+        setNoResults(filteredResults.length === 0);
+        setIsSearching(false);
+      }, 500);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to search songs");
+      setSearchResults([]);
+      setNoResults(true);
+      setIsSearching(false);
+    }
   };
 
   const handleSubscribe = async (song: Song) => {
@@ -187,8 +212,8 @@ export default function MainPage() {
             <h2 className="text-2xl font-bold">My Subscriptions</h2>
             {loading ? (
               <p>Loading subscriptions...</p>
-            ) : error ? (
-              <p className="text-red-500">{error}</p>
+            ) : subscriptionError ? (
+              <p className="text-red-500">{subscriptionError}</p>
             ) : subscriptions.length > 0 ? (
               <div className="rounded-md border">
                 <Table>
@@ -207,7 +232,10 @@ export default function MainPage() {
                       <TableRow key={index}>
                         <TableCell>
                           <Image
-                            src={subscription.image_url}
+                            src={
+                              subscription.image_url ||
+                              "/placeholder.svg?height=100&width=100"
+                            }
                             alt={subscription.title}
                             width={50}
                             height={50}
@@ -323,10 +351,16 @@ export default function MainPage() {
               <Button
                 onClick={handleSearch}
                 className="w-full gap-2"
-                disabled={loading}
+                disabled={loading || isSearching}
               >
-                <Search className="h-4 w-4" />
-                Search
+                {isSearching ? (
+                  <span>Searching...</span>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4" />
+                    Search
+                  </>
+                )}
               </Button>
             </div>
 
@@ -349,7 +383,10 @@ export default function MainPage() {
                       <TableRow key={index}>
                         <TableCell>
                           <Image
-                            src={result.image_url}
+                            src={
+                              result.image_url ||
+                              "/placeholder.svg?height=100&width=100"
+                            }
                             alt={result.title}
                             width={50}
                             height={50}
