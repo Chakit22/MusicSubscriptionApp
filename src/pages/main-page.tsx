@@ -3,19 +3,28 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { LogOut, X, Plus, Check } from "lucide-react";
+import {
+  LogOut,
+  X,
+  Plus,
+  Check,
+  Search,
+  Music,
+  Headphones,
+  Star,
+} from "lucide-react";
 import { toast } from "sonner";
+import axios from "axios";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Song } from "@/types";
 
@@ -98,6 +107,14 @@ export default function MainPage() {
   const [user] = useState(mockUser);
   const [subscriptions, setSubscriptions] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState({
+    title: "",
+    artist: "",
+    album: "",
+    year: "",
+  });
+  const [searchResults, setSearchResults] = useState<Song[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const {
     loading,
@@ -204,25 +221,63 @@ export default function MainPage() {
     );
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSearchQuery((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSearch = async () => {
+    try {
+      setIsSearching(true);
+      const response = await axios.get("/api/query-songs", {
+        params: searchQuery,
+      });
+
+      if (response.data.success) {
+        setSearchResults(response.data.songs);
+        toast.success(
+          `Found ${response.data.songs.length} songs matching your criteria`
+        );
+      } else {
+        toast.error("Failed to search songs");
+      }
+    } catch (error) {
+      console.error("Error searching songs:", error);
+      toast.error("Error searching songs");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       {/* Header with user area and logout */}
-      <header className="border-b bg-card">
+      <header className="border-b border-indigo-100 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-black">
-              Music Subscription App
-            </h1>
-            <div className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="bg-indigo-600 p-2 rounded-lg shadow-md">
+                <Music className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Music Subscription App
+              </h1>
+            </div>
+            <div className="text-sm text-gray-600">
               Welcome,{" "}
-              <span className="font-medium text-black">{user.user_name}</span>
+              <span className="font-medium text-indigo-700">
+                {user.user_name}
+              </span>
             </div>
           </div>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={handleLogout}
-            className="gap-2 text-black"
+            className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-all duration-300"
           >
             <LogOut className="h-4 w-4" />
             Logout
@@ -230,76 +285,156 @@ export default function MainPage() {
         </div>
       </header>
 
-      <main className="container px-4 py-6 md:py-10">
-        <div className="grid gap-8">
+      <main className="container px-4 py-8 md:py-12">
+        <div className="grid gap-10">
+          {/* Search Section */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Search className="h-6 w-6 text-indigo-600" />
+              <h2 className="text-2xl font-bold text-gray-800">Search Songs</h2>
+            </div>
+            <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-indigo-100 transition-all duration-300 hover:shadow-xl">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Title
+                    </label>
+                    <Input
+                      name="title"
+                      value={searchQuery.title}
+                      onChange={handleSearchChange}
+                      placeholder="Song title"
+                      className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Artist
+                    </label>
+                    <Input
+                      name="artist"
+                      value={searchQuery.artist}
+                      onChange={handleSearchChange}
+                      placeholder="Artist name"
+                      className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Album
+                    </label>
+                    <Input
+                      name="album"
+                      value={searchQuery.album}
+                      onChange={handleSearchChange}
+                      placeholder="Album name"
+                      className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Year
+                    </label>
+                    <Input
+                      name="year"
+                      value={searchQuery.year}
+                      onChange={handleSearchChange}
+                      placeholder="Release year"
+                      className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md transition-all duration-300 transform hover:scale-105"
+                    disabled={true}
+                    onClick={handleSearch}
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    Search
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
           {/* My Subscriptions Section */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold">My Subscriptions</h2>
+            <div className="flex items-center gap-2">
+              <Star className="h-6 w-6 text-amber-500" />
+              <h2 className="text-2xl font-bold text-gray-800">
+                My Subscriptions
+              </h2>
+            </div>
             {loading || isLoading ? (
-              <p>Loading subscriptions...</p>
+              <div className="flex justify-center py-12">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+              </div>
             ) : subscriptionError ? (
-              <p className="text-red-500">{subscriptionError}</p>
+              <Card className="bg-red-50 border-red-200">
+                <CardContent className="p-6">
+                  <p className="text-red-500">{subscriptionError}</p>
+                </CardContent>
+              </Card>
             ) : subscriptions.length > 0 ? (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]"></TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Artist</TableHead>
-                      <TableHead>Album</TableHead>
-                      <TableHead>Year</TableHead>
-                      <TableHead className="w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subscriptions.map((subscription, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <Image
-                            src={
-                              subscription.image_url ||
-                              "/placeholder.svg?height=100&width=100"
-                            }
-                            alt={subscription.title}
-                            width={50}
-                            height={50}
-                            className="rounded"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-black">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {subscriptions.map((subscription, index) => (
+                  <Card
+                    key={index}
+                    className="overflow-hidden transition-all duration-300 hover:shadow-xl border-indigo-100 bg-white/80 backdrop-blur-sm group"
+                  >
+                    <div className="relative h-48 w-full overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+                      <Image
+                        src={
+                          subscription.image_url ||
+                          "/placeholder.svg?height=100&width=100"
+                        }
+                        alt={subscription.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                        <h3 className="text-white font-bold text-lg truncate">
                           {subscription.title}
-                        </TableCell>
-                        <TableCell>{subscription.artist}</TableCell>
-                        <TableCell>{subscription.album}</TableCell>
-                        <TableCell>{subscription.year}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              handleRemoveSubscription(subscription)
-                            }
-                            className="text-red-500 hover:text-red-700"
-                            aria-label="Remove subscription"
-                            disabled={loading || isLoading}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </h3>
+                        <p className="text-white/80 text-sm">
+                          {subscription.artist}
+                        </p>
+                      </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-gray-500">
+                        {subscription.album} • {subscription.year}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveSubscription(subscription)}
+                        className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-300"
+                        disabled={loading || isLoading}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Unsubscribe
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
               </div>
             ) : (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center p-6">
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-indigo-100">
+                <CardContent className="flex flex-col items-center justify-center p-10">
+                  <div className="bg-indigo-100 p-4 rounded-full mb-4">
+                    <Headphones className="h-8 w-8 text-indigo-600" />
+                  </div>
                   <div className="text-center">
-                    <h3 className="mt-2 text-xl font-semibold">
+                    <h3 className="mt-2 text-xl font-semibold text-gray-800">
                       No Subscriptions Yet
                     </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 text-sm text-gray-600">
                       Subscribe to songs from the list below.
                     </p>
                   </div>
@@ -310,71 +445,70 @@ export default function MainPage() {
 
           {/* All Songs Section */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold">All Available Songs</h2>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]"></TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Artist</TableHead>
-                    <TableHead>Album</TableHead>
-                    <TableHead>Year</TableHead>
-                    <TableHead className="w-[120px]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockSongs.map((song, index) => {
-                    const subscribed = isAlreadySubscribed(song);
+            <div className="flex items-center gap-2">
+              <Music className="h-6 w-6 text-indigo-600" />
+              <h2 className="text-2xl font-bold text-gray-800">
+                All Available Songs
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {mockSongs.map((song, index) => {
+                const subscribed = isAlreadySubscribed(song);
 
-                    return (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <Image
-                            src={
-                              song.image_url ||
-                              "/placeholder.svg?height=100&width=100"
-                            }
-                            alt={song.title}
-                            width={50}
-                            height={50}
-                            className="rounded"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-black">
+                return (
+                  <Card
+                    key={index}
+                    className="overflow-hidden transition-all duration-300 hover:shadow-xl border-indigo-100 bg-white/80 backdrop-blur-sm group"
+                  >
+                    <div className="relative h-48 w-full overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+                      <Image
+                        src={
+                          song.image_url ||
+                          "/placeholder.svg?height=100&width=100"
+                        }
+                        alt={song.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                        <h3 className="text-white font-bold text-lg truncate">
                           {song.title}
-                        </TableCell>
-                        <TableCell>{song.artist}</TableCell>
-                        <TableCell>{song.album}</TableCell>
-                        <TableCell>{song.year}</TableCell>
-                        <TableCell>
-                          <Button
-                            onClick={() => handleSubscribe(song)}
-                            className={`${
-                              subscribed
-                                ? "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700"
-                                : "bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-700"
-                            } gap-1 px-2 py-1 h-8`}
-                            // disabled={loading || isLoading}
-                          >
-                            {subscribed ? (
-                              <>
-                                <X className="h-3 w-3" />
-                                Unsubscribe
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="h-3 w-3" />
-                                Subscribe
-                              </>
-                            )}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                        </h3>
+                        <p className="text-white/80 text-sm">{song.artist}</p>
+                      </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <p className="text-xs text-gray-500">
+                        {song.album} • {song.year}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                      <Button
+                        onClick={() => handleSubscribe(song)}
+                        className={`w-full transition-all duration-300 ${
+                          subscribed
+                            ? "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700"
+                            : "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                        }`}
+                        disabled={loading || isLoading}
+                      >
+                        {subscribed ? (
+                          <>
+                            <X className="mr-2 h-4 w-4" />
+                            Unsubscribe
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Subscribe
+                          </>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
             </div>
           </section>
         </div>
