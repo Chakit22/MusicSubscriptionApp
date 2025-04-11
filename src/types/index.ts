@@ -6,7 +6,7 @@ export type Song = {
   image_url?: string;
 };
 
-export type APIParams = Song & {
+export type APIParams = {
   email: string;
   title: string;
   artist: string;
