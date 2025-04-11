@@ -113,7 +113,7 @@ export const useSubscription = (userEmail: string) => {
 
   const getSubscribedSongs = async (): Promise<{
     status: number;
-    message: string;
+    message: string | Song[];
   }> => {
     setLoading(true);
     setError(null);

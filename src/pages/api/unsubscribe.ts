@@ -11,22 +11,20 @@ export default async function handler(
   }
 
   try {
-    const payload = req.body as APIParams;
+    const payload = req.query;
 
     const response = await axios.delete(
       `${process.env.SUBSCRIPTIONS_LAMBDA_URL}`,
       { params: payload }
     );
 
-    console.log("response in unsubscribe", response.data);
-
     if (response.data.statusCode !== 200) {
-      throw new Error(response.data.body);
+      throw new Error(JSON.parse(response.data.body));
     }
 
     return res.status(response.data.statusCode).json({
       status: response.data.statusCode,
-      message: response.data.body,
+      message: JSON.parse(response.data.body),
     });
   } catch (error: unknown) {
     console.log("error", error);

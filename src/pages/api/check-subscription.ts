@@ -19,12 +19,12 @@ export default async function handler(
     );
 
     if (response.data.statusCode !== 200) {
-      throw new Error(response.data.body);
+      throw new Error(JSON.parse(response.data.body));
     }
 
     return res.status(response.data.statusCode).json({
       status: response.data.statusCode,
-      message: response.data.body,
+      message: JSON.parse(response.data.body),
     });
   } catch (error: unknown) {
     console.log("error", error);

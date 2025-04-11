@@ -119,9 +119,11 @@ export default function MainPage() {
       const response = await getSubscribedSongs();
       if (response.status === 200) {
         console.log("response in fetchSubscriptions", response);
-        setSubscriptions(JSON.parse(response.message));
+        setSubscriptions(response.message as Song[]);
       } else {
-        toast.error(response.message || "Failed to fetch subscriptions");
+        toast.error(
+          (response.message as string) || "Failed to fetch subscriptions"
+        );
       }
     } catch {
       toast.error("Error fetching subscriptions");

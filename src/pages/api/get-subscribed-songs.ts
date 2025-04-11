@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios, { AxiosError } from "axios";
+import { Song } from "@/types";
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,12 +21,12 @@ export default async function handler(
     console.log("response in get-subscribed-songs");
 
     if (response.data.statusCode !== 200) {
-      throw new Error(response.data.body);
+      throw new Error(JSON.parse(response.data.body));
     }
 
     return res.status(response.data.statusCode).json({
       status: response.data.statusCode,
-      message: response.data.body,
+      message: JSON.parse(response.data.body) as Song[],
     });
   } catch (error: unknown) {
     console.log("error", error);
