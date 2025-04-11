@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Search, LogOut, X, Plus } from "lucide-react";
-import axios from "axios";
+import { LogOut, X, Plus, Check } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -18,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSubscription } from "@/hooks/useSubscription";
-import { Song, APIParams } from "@/types";
+import { Song } from "@/types";
 
 // Mock data for demonstration purposes
 const mockUser = {
@@ -26,37 +25,110 @@ const mockUser = {
   email: "johndoe@example.com",
 };
 
+// Mock songs data
+const mockSongs = [
+  {
+    title: "Bohemian Rhapsody",
+    artist: "Queen",
+    year: 1975,
+    album: "A Night at the Opera",
+    image_url:
+      "https://upload.wikimedia.org/wikipedia/en/4/4d/Queen_A_Night_At_The_Opera.png",
+  },
+  {
+    title: "Billie Jean",
+    artist: "Michael Jackson",
+    year: 1982,
+    album: "Thriller",
+    image_url:
+      "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png",
+  },
+  {
+    title: "Sweet Child o' Mine",
+    artist: "Guns N' Roses",
+    year: 1987,
+    album: "Appetite for Destruction",
+    image_url:
+      "https://upload.wikimedia.org/wikipedia/en/6/60/GunsnRosesAppetiteforDestructionalbumcover.jpg",
+  },
+  {
+    title: "Hotel California",
+    artist: "Eagles",
+    year: 1976,
+    album: "Hotel California",
+    image_url:
+      "https://upload.wikimedia.org/wikipedia/en/4/49/Hotelcalifornia.jpg",
+  },
+  {
+    title: "Imagine",
+    artist: "John Lennon",
+    year: 1971,
+    album: "Imagine",
+    image_url:
+      "https://upload.wikimedia.org/wikipedia/en/6/69/ImagineCover.jpg",
+  },
+  {
+    title: "Stairway to Heaven",
+    artist: "Led Zeppelin",
+    year: 1971,
+    album: "Led Zeppelin IV",
+    image_url:
+      "https://upload.wikimedia.org/wikipedia/en/2/26/Led_Zeppelin_-_Led_Zeppelin_IV.jpg",
+  },
+  {
+    title: "Smells Like Teen Spirit",
+    artist: "Nirvana",
+    year: 1991,
+    album: "Nevermind",
+    image_url:
+      "https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg",
+  },
+  {
+    title: "Hey Jude",
+    artist: "The Beatles",
+    year: 1968,
+    album: "Hey Jude",
+    image_url:
+      "https://upload.wikimedia.org/wikipedia/en/3/3d/Beatles_-_Hey_Jude_Single.jpg",
+  },
+];
+
 export default function MainPage() {
   const router = useRouter();
   const [user] = useState(mockUser);
   const [subscriptions, setSubscriptions] = useState<Song[]>([]);
-  const [searchResults, setSearchResults] = useState<Song[]>([]);
-  const [searchParams, setSearchParams] = useState({
-    title: "",
-    artist: "",
-    year: "",
-    album: "",
-  });
-  const [noResults, setNoResults] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     loading,
     error: subscriptionError,
     subscribeToSong,
     unsubscribeFromSong,
+    checkSubscription,
     getSubscribedSongs,
   } = useSubscription(user.email);
 
   useEffect(() => {
-    const fetchSubscriptions = async () => {
-      const songs = await getSubscribedSongs();
-      setSubscriptions(songs);
-    };
-
     fetchSubscriptions();
-  }, [getSubscribedSongs]);
+  }, []);
+
+  const fetchSubscriptions = async () => {
+    try {
+      setIsLoading(true);
+      console.log("fetchSubscriptions");
+      const response = await getSubscribedSongs();
+      if (response.status === 200) {
+        console.log("response in fetchSubscriptions", response);
+        setSubscriptions(JSON.parse(response.message));
+      } else {
+        toast.error(response.message || "Failed to fetch subscriptions");
+      }
+    } catch {
+      toast.error("Error fetching subscriptions");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     // In a real implementation, this would clear the session/auth state
@@ -64,119 +136,67 @@ export default function MainPage() {
   };
 
   const handleRemoveSubscription = async (song: Song) => {
-    const success = await unsubscribeFromSong(song);
-    if (success) {
-      setSubscriptions(
-        subscriptions.filter(
-          (sub) =>
-            !(
-              sub.title === song.title &&
-              sub.album === song.album &&
-              sub.artist === song.artist
-            )
-        )
-      );
-    }
-  };
-
-  const handleSearch = async () => {
-    // Check if at least one field is filled
-    const hasQuery = Object.values(searchParams).some(
-      (param) => param.trim() !== ""
-    );
-
-    if (!hasQuery) {
-      alert("Please fill at least one search field");
-      return;
-    }
-
-    setIsSearching(true);
-    setError(null);
-
     try {
-      // We need to create a mock API for song search
-      // This would typically be a proper API endpoint
-      const payload: APIParams = {
-        httpMethod: "GET",
-        path: "/songs",
-        email: user.email,
-        ...searchParams,
-      };
-
-      // For now, we'll use mock data as a placeholder
-      // In a real app, this would be an actual API call
-      setTimeout(() => {
-        const filteredResults = [
-          {
-            title: "Rivers of Babylon",
-            artist: "The Melodians",
-            year: "1970",
-            album: "Rivers of Babylon",
-            image_url: "/placeholder.svg?height=100&width=100",
-          },
-          {
-            title: "White Blood Cells",
-            artist: "The White Stripes",
-            year: "2001",
-            album: "White Blood Cells",
-            image_url: "/placeholder.svg?height=100&width=100",
-          },
-        ].filter((item) => {
-          return (
-            (!searchParams.title ||
-              item.title
-                .toLowerCase()
-                .includes(searchParams.title.toLowerCase())) &&
-            (!searchParams.artist ||
-              item.artist
-                .toLowerCase()
-                .includes(searchParams.artist.toLowerCase())) &&
-            (!searchParams.year || item.year.includes(searchParams.year)) &&
-            (!searchParams.album ||
-              item.album
-                .toLowerCase()
-                .includes(searchParams.album.toLowerCase()))
-          );
-        });
-
-        setSearchResults(filteredResults);
-        setNoResults(filteredResults.length === 0);
-        setIsSearching(false);
-      }, 500);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to search songs");
-      setSearchResults([]);
-      setNoResults(true);
-      setIsSearching(false);
+      console.log("handleRemoveSubscription", song);
+      setIsLoading(true);
+      const response = await unsubscribeFromSong(song);
+      if (response.status === 200) {
+        setSubscriptions(
+          subscriptions.filter(
+            (sub) =>
+              !(
+                sub.title === song.title &&
+                sub.album === song.album &&
+                sub.artist === song.artist
+              )
+          )
+        );
+        toast.success("Unsubscribed successfully");
+      } else {
+        toast.error(response.message || "Failed to unsubscribe");
+      }
+    } catch {
+      toast.error("Error processing unsubscribe request");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSubscribe = async (song: Song) => {
-    // Check if already subscribed
-    const isAlreadySubscribed = subscriptions.some(
+    try {
+      console.log("handleSubscribe", song);
+      setIsLoading(true);
+      // Check if already subscribed
+      const isSubscribed = isAlreadySubscribed(song);
+
+      if (isSubscribed) {
+        // Unsubscribe
+        await handleRemoveSubscription(song);
+      } else {
+        // Subscribe
+        const response = await subscribeToSong(song);
+
+        if (response.status === 200) {
+          setSubscriptions([...subscriptions, song]);
+          toast.success("Successfully subscribed to song");
+        } else {
+          toast.error(response.message || "Failed to subscribe to song");
+        }
+      }
+    } catch {
+      toast.error("Error processing subscription request");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isAlreadySubscribed = (song: Song) => {
+    return subscriptions.some(
       (sub) =>
         sub.title === song.title &&
         sub.album === song.album &&
         sub.artist === song.artist
     );
-
-    if (isAlreadySubscribed) {
-      alert("You are already subscribed to this song");
-      return;
-    }
-
-    const success = await subscribeToSong(song);
-    if (success) {
-      setSubscriptions([...subscriptions, song]);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setSearchParams({
-      ...searchParams,
-      [name]: value,
-    });
   };
 
   return (
@@ -206,11 +226,11 @@ export default function MainPage() {
       </header>
 
       <main className="container px-4 py-6 md:py-10">
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* Subscription Area */}
+        <div className="grid gap-8">
+          {/* My Subscriptions Section */}
           <section className="space-y-4">
             <h2 className="text-2xl font-bold">My Subscriptions</h2>
-            {loading ? (
+            {loading || isLoading ? (
               <p>Loading subscriptions...</p>
             ) : subscriptionError ? (
               <p className="text-red-500">{subscriptionError}</p>
@@ -257,6 +277,7 @@ export default function MainPage() {
                             }
                             className="text-red-500 hover:text-red-700"
                             aria-label="Remove subscription"
+                            disabled={loading || isLoading}
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -274,7 +295,7 @@ export default function MainPage() {
                       No Subscriptions Yet
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Subscribe to songs to see them here.
+                      Subscribe to songs from the list below.
                     </p>
                   </div>
                 </CardContent>
@@ -282,154 +303,74 @@ export default function MainPage() {
             )}
           </section>
 
-          {/* Search Area */}
+          {/* All Songs Section */}
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold">Find Songs</h2>
-            <div className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="title"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Title
-                  </label>
-                  <Input
-                    id="title"
-                    name="title"
-                    placeholder="Song title"
-                    value={searchParams.title}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="artist"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Artist
-                  </label>
-                  <Input
-                    id="artist"
-                    name="artist"
-                    placeholder="Artist name"
-                    value={searchParams.artist}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="year"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Year
-                  </label>
-                  <Input
-                    id="year"
-                    name="year"
-                    placeholder="Release year"
-                    value={searchParams.year}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="album"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Album
-                  </label>
-                  <Input
-                    id="album"
-                    name="album"
-                    placeholder="Album name"
-                    value={searchParams.album}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              <Button
-                onClick={handleSearch}
-                className="w-full gap-2"
-                disabled={loading || isSearching}
-              >
-                {isSearching ? (
-                  <span>Searching...</span>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4" />
-                    Search
-                  </>
-                )}
-              </Button>
-            </div>
+            <h2 className="text-2xl font-bold">All Available Songs</h2>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]"></TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Artist</TableHead>
+                    <TableHead>Album</TableHead>
+                    <TableHead>Year</TableHead>
+                    <TableHead className="w-[120px]">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockSongs.map((song, index) => {
+                    const subscribed = isAlreadySubscribed(song);
 
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]"></TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Artist</TableHead>
-                      <TableHead>Album</TableHead>
-                      <TableHead>Year</TableHead>
-                      <TableHead className="w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {searchResults.map((result, index) => (
+                    return (
                       <TableRow key={index}>
                         <TableCell>
                           <Image
                             src={
-                              result.image_url ||
+                              song.image_url ||
                               "/placeholder.svg?height=100&width=100"
                             }
-                            alt={result.title}
+                            alt={song.title}
                             width={50}
                             height={50}
                             className="rounded"
                           />
                         </TableCell>
                         <TableCell className="font-medium">
-                          {result.title}
+                          {song.title}
                         </TableCell>
-                        <TableCell>{result.artist}</TableCell>
-                        <TableCell>{result.album}</TableCell>
-                        <TableCell>{result.year}</TableCell>
+                        <TableCell>{song.artist}</TableCell>
+                        <TableCell>{song.album}</TableCell>
+                        <TableCell>{song.year}</TableCell>
                         <TableCell>
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleSubscribe(result)}
-                            className="text-green-500 hover:text-green-700"
-                            aria-label="Subscribe to song"
-                            disabled={loading}
+                            onClick={() => handleSubscribe(song)}
+                            className={`${
+                              subscribed
+                                ? "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700"
+                                : "bg-green-100 text-green-600 hover:bg-green-200 hover:text-green-700"
+                            } gap-1 px-2 py-1 h-8`}
+                            // disabled={loading || isLoading}
                           >
-                            <Plus className="h-4 w-4" />
+                            {subscribed ? (
+                              <>
+                                <X className="h-3 w-3" />
+                                Unsubscribe
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-3 w-3" />
+                                Subscribe
+                              </>
+                            )}
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-
-            {noResults && (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center p-6">
-                  <div className="text-center">
-                    <h3 className="mt-2 text-xl font-semibold">No Results</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Try adjusting your search criteria.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </section>
         </div>
       </main>

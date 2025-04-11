@@ -1,19 +1,24 @@
 import { useState } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { Song, APIParams } from "@/types";
 
 export const useSubscription = (userEmail: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const subscribeToSong = async (song: Song): Promise<boolean> => {
+  const subscribeToSong = async (
+    song: Song
+  ): Promise<{
+    status: number;
+    message: string;
+  }> => {
     setLoading(true);
     setError(null);
 
     try {
       const payload: APIParams = {
         httpMethod: "POST",
-        path: "/subscribe",
+        path: "subscribe",
         email: userEmail,
         title: song.title,
         album: song.album,
@@ -23,24 +28,29 @@ export const useSubscription = (userEmail: string) => {
 
       const response = await axios.post("/api/subscribe", payload);
       setLoading(false);
-      return response.data.status === 200;
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to subscribe to the song"
-      );
-      setLoading(false);
-      return false;
+      return response.data;
+    } catch (err: unknown) {
+      return {
+        status: 500,
+        message:
+          err instanceof Error ? err.message : "Failed to subscribe to song",
+      };
     }
   };
 
-  const unsubscribeFromSong = async (song: Song): Promise<boolean> => {
+  const unsubscribeFromSong = async (
+    song: Song
+  ): Promise<{
+    status: number;
+    message: string;
+  }> => {
     setLoading(true);
     setError(null);
 
     try {
       const payload: APIParams = {
         httpMethod: "DELETE",
-        path: "/unsubscribe",
+        path: "unsubscribe",
         email: userEmail,
         title: song.title,
         album: song.album,
@@ -48,25 +58,31 @@ export const useSubscription = (userEmail: string) => {
         year: song.year,
       };
 
-      // Note: Using axios.delete with a request body requires special handling
-      const response = await axios({
-        method: "DELETE",
-        url: "/api/unsubscribe",
-        data: payload,
+      const response = await axios.delete("/api/unsubscribe", {
+        params: payload,
       });
 
+      console.log("response in unsubscribeFromSong", response.data);
+
       setLoading(false);
-      return response.data.status === 200;
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to unsubscribe from the song"
-      );
-      setLoading(false);
-      return false;
+      return response.data;
+    } catch (err: unknown) {
+      return {
+        status: 500,
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to unsubscribe from the song",
+      };
     }
   };
 
-  const checkSubscription = async (song: Song): Promise<boolean> => {
+  const checkSubscription = async (
+    song: Song
+  ): Promise<{
+    status: number;
+    message: string;
+  }> => {
     setLoading(true);
     setError(null);
 
@@ -74,63 +90,56 @@ export const useSubscription = (userEmail: string) => {
       const response = await axios.get("/api/check-subscription", {
         params: {
           httpMethod: "GET",
-          path: "/check-subscription",
+          path: "check-subscription",
           email: userEmail,
           title: song.title,
           album: song.album,
           artist: song.artist,
-          // Note: year is intentionally omitted as seen in the API
         },
       });
 
       setLoading(false);
-      // Parse the JSON string body to get the actual result
-      const bodyData =
-        typeof response.data.message === "string"
-          ? JSON.parse(response.data.message)
-          : response.data.message;
-
-      return bodyData.isSubscribed || false;
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to check subscription status"
-      );
-      setLoading(false);
-      return false;
+      return response.data;
+    } catch (err: unknown) {
+      return {
+        status: 500,
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to check subscription status",
+      };
     }
   };
 
-  const getSubscribedSongs = async (): Promise<Song[]> => {
+  const getSubscribedSongs = async (): Promise<{
+    status: number;
+    message: string;
+  }> => {
     setLoading(true);
     setError(null);
 
     try {
+      console.log("userEmail in useSubscription", userEmail);
       const response = await axios.get("/api/get-subscribed-songs", {
         params: {
           email: userEmail,
+          httpMethod: "GET",
+          path: "subscriptions",
         },
       });
 
+      console.log("response in useSubscription", response.data);
+
       setLoading(false);
-
-      // Parse the response body if it's a string
-      let songs: Song[] = [];
-      if (response.data.status === 200) {
-        const bodyData =
-          typeof response.data.songs === "string"
-            ? JSON.parse(response.data.songs)
-            : response.data.songs;
-
-        songs = Array.isArray(bodyData) ? bodyData : [];
-      }
-
-      return songs;
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to fetch subscribed songs"
-      );
-      setLoading(false);
-      return [];
+      return response.data;
+    } catch (err: unknown) {
+      return {
+        status: 500,
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch subscribed songs",
+      };
     }
   };
 

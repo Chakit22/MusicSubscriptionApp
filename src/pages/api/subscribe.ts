@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { APIParams } from "@/types";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 export default async function handler(
   req: NextApiRequest,
@@ -23,18 +23,20 @@ export default async function handler(
       }
     );
 
-    if (response.data.body.error) {
-      throw new Error(response.data.body.message);
+    if (response.data.statusCode !== 200) {
+      throw new Error(response.data.body);
     }
 
     return res.status(response.data.statusCode).json({
       status: response.data.statusCode,
       message: response.data.body,
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    console.log("error", error);
     return res.status(500).json({
       status: 500,
-      message: "Failed to subscribe to song",
+      message:
+        error instanceof Error ? error.message : "Failed to subscribe to song",
     });
   }
 }

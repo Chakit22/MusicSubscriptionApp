@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,21 +10,31 @@ export default async function handler(
   }
 
   try {
-    const { email } = req.query;
+    const payload = req.query;
 
     const response = await axios.get(
       `${process.env.SUBSCRIPTIONS_LAMBDA_URL}`,
-      { params: { email } }
+      { params: payload }
     );
+
+    console.log("response in get-subscribed-songs");
+
+    if (response.data.statusCode !== 200) {
+      throw new Error(response.data.body);
+    }
 
     return res.status(response.data.statusCode).json({
       status: response.data.statusCode,
-      songs: response.data.body,
+      message: response.data.body,
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    console.log("error", error);
     return res.status(500).json({
       status: 500,
-      message: "Failed to retrieve subscribed songs",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to get subscribed songs",
     });
   }
 }
