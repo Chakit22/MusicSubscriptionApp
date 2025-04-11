@@ -107,6 +107,41 @@ try {
 }
 ```
 
+### Important: HTTP Status Codes vs Response Body Error Properties
+
+Axios only triggers the catch block when the HTTP status code is outside the 200-299 range. Even if the response body contains an error property or indicates a failure, Axios will still resolve the promise successfully if the HTTP status code is in the 2xx range.
+
+```javascript
+// Example: Server returns HTTP 200 but indicates error in response body
+// Server side
+app.get("/api/data", (req, res) => {
+  res.status(200).json({
+    success: false,
+    error: true,
+    message: "Some business logic error occurred",
+  });
+});
+
+// Client side
+try {
+  const response = await axios.get("/api/data");
+  // This will execute because HTTP status is 200
+  // You must check the response body for error indicators
+  if (response.data.error) {
+    console.log("Error in response body:", response.data.message);
+    // Handle the error appropriately
+  } else {
+    // Process successful response
+  }
+} catch (error) {
+  // This will NOT execute for HTTP 200 responses
+  // Only executes for network errors or HTTP status codes outside 200-299
+  console.error("HTTP error:", error);
+}
+```
+
+Therefore, always check the response body for error indicators when working with APIs that may return error information with successful HTTP status codes.
+
 ## Key Takeaways
 
 1. The structure of `response.data` depends entirely on what the server sent
@@ -115,3 +150,5 @@ try {
 4. Axios wraps the server's response in its own structure, separating HTTP status from any status code in the response body
 5. Always check the structure of your API responses to handle them correctly
 6. throw new Error("Failed") returns an error which can be caught within the catch block and be extracted by error.message
+7. Axios only enters the catch block for HTTP status codes outside the 200-299 range, regardless of error properties in the response body
+8. For APIs that return error information with 2xx status codes, you must explicitly check the response body for error indicators
