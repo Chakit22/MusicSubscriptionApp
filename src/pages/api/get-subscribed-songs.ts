@@ -22,7 +22,10 @@ export default async function handler(
 
     return res.status(response.status).json({
       status: response.status,
-      message: response.data as Song[],
+      message: response.data.map((song: Song) => ({
+        ...song,
+        year: song.year.toString(),
+      })) as Song[],
     });
   } catch (error: unknown) {
     console.error("error", error);
