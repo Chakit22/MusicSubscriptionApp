@@ -18,9 +18,9 @@ export default async function handler(
       { params: apiParams }
     );
 
-    return res.status(response.data.statusCode).json({
-      status: response.data.statusCode,
-      message: response.data.body,
+    return res.status(response.status).json({
+      status: response.status,
+      message: response.data,
     });
   } catch (error: unknown) {
     console.error("error", error);

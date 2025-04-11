@@ -49,7 +49,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           song.title.toLowerCase().includes(String(title).toLowerCase())) &&
         (!artist ||
           song.artist.toLowerCase().includes(String(artist).toLowerCase())) &&
-        (!year || song.year.includes(String(year))) &&
+        (!year || song.year === String(year)) &&
         (!album ||
           song.album.toLowerCase().includes(String(album).toLowerCase()))
       );

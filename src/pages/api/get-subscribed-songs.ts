@@ -18,9 +18,11 @@ export default async function handler(
       { params: payload }
     );
 
-    return res.status(response.data.statusCode).json({
-      status: response.data.statusCode,
-      message: response.data.body as Song[],
+    console.log("response in get-subscribed-songs", response.data);
+
+    return res.status(response.status).json({
+      status: response.status,
+      message: response.data as Song[],
     });
   } catch (error: unknown) {
     console.error("error", error);

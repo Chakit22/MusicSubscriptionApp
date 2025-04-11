@@ -13,6 +13,8 @@ export default async function handler(
   try {
     const payload = req.body as APIParams;
 
+    console.log("payload in subscribe", payload);
+
     const response = await axios.post(
       `${process.env.SUBSCRIPTIONS_LAMBDA_URL}/subscribe`,
       payload,
@@ -23,9 +25,11 @@ export default async function handler(
       }
     );
 
-    return res.status(response.data.statusCode).json({
-      status: response.data.statusCode,
-      message: response.data.body,
+    // console.log("response in subscribe", response.data);
+
+    return res.status(response.status).json({
+      status: response.status,
+      message: response.data,
     });
   } catch (error: unknown) {
     console.error("error", error);

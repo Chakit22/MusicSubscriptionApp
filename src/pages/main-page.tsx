@@ -30,7 +30,7 @@ const mockSongs = [
   {
     title: "Bohemian Rhapsody",
     artist: "Queen",
-    year: 1975,
+    year: "1975",
     album: "A Night at the Opera",
     image_url:
       "https://upload.wikimedia.org/wikipedia/en/4/4d/Queen_A_Night_At_The_Opera.png",
@@ -38,7 +38,7 @@ const mockSongs = [
   {
     title: "Billie Jean",
     artist: "Michael Jackson",
-    year: 1982,
+    year: "1982",
     album: "Thriller",
     image_url:
       "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png",
@@ -46,7 +46,7 @@ const mockSongs = [
   {
     title: "Sweet Child o' Mine",
     artist: "Guns N' Roses",
-    year: 1987,
+    year: "1987",
     album: "Appetite for Destruction",
     image_url:
       "https://upload.wikimedia.org/wikipedia/en/6/60/GunsnRosesAppetiteforDestructionalbumcover.jpg",
@@ -54,7 +54,7 @@ const mockSongs = [
   {
     title: "Hotel California",
     artist: "Eagles",
-    year: 1976,
+    year: "1976",
     album: "Hotel California",
     image_url:
       "https://upload.wikimedia.org/wikipedia/en/4/49/Hotelcalifornia.jpg",
@@ -62,7 +62,7 @@ const mockSongs = [
   {
     title: "Imagine",
     artist: "John Lennon",
-    year: 1971,
+    year: "1971",
     album: "Imagine",
     image_url:
       "https://upload.wikimedia.org/wikipedia/en/6/69/ImagineCover.jpg",
@@ -70,7 +70,7 @@ const mockSongs = [
   {
     title: "Stairway to Heaven",
     artist: "Led Zeppelin",
-    year: 1971,
+    year: "1971",
     album: "Led Zeppelin IV",
     image_url:
       "https://upload.wikimedia.org/wikipedia/en/2/26/Led_Zeppelin_-_Led_Zeppelin_IV.jpg",
@@ -78,7 +78,7 @@ const mockSongs = [
   {
     title: "Smells Like Teen Spirit",
     artist: "Nirvana",
-    year: 1991,
+    year: "1991",
     album: "Nevermind",
     image_url:
       "https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg",
@@ -86,7 +86,7 @@ const mockSongs = [
   {
     title: "Hey Jude",
     artist: "The Beatles",
-    year: 1968,
+    year: "1968",
     album: "Hey Jude",
     image_url:
       "https://upload.wikimedia.org/wikipedia/en/3/3d/Beatles_-_Hey_Jude_Single.jpg",
@@ -106,7 +106,7 @@ export default function MainPage() {
     unsubscribeFromSong,
     checkSubscription,
     getSubscribedSongs,
-  } = useSubscription(user.email);
+  } = useSubscription("chakit@gmail.com");
 
   useEffect(() => {
     fetchSubscriptions();
@@ -121,6 +121,7 @@ export default function MainPage() {
         console.log("response in fetchSubscriptions", response);
         setSubscriptions(response.message as Song[]);
       } else {
+        console.error("response in fetchSubscriptions", response.message);
         toast.error(
           (response.message as string) || "Failed to fetch subscriptions"
         );
@@ -139,8 +140,10 @@ export default function MainPage() {
 
   const handleRemoveSubscription = async (song: Song) => {
     try {
+      console.log(song);
       console.log("handleRemoveSubscription", song);
       setIsLoading(true);
+      console.log(song);
       const response = await unsubscribeFromSong(song);
       if (response.status === 200) {
         setSubscriptions(
@@ -264,7 +267,7 @@ export default function MainPage() {
                             className="rounded"
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium text-black">
                           {subscription.title}
                         </TableCell>
                         <TableCell>{subscription.artist}</TableCell>
@@ -338,7 +341,7 @@ export default function MainPage() {
                             className="rounded"
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium text-black">
                           {song.title}
                         </TableCell>
                         <TableCell>{song.artist}</TableCell>
