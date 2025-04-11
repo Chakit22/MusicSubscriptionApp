@@ -7,8 +7,6 @@ export type Song = {
 };
 
 export type APIParams = Song & {
-  httpMethod: string;
-  path: string;
   email: string;
   title: string;
   artist: string;
