@@ -12,6 +12,9 @@ import {
   Music,
   Headphones,
   Star,
+  Calendar,
+  Disc,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -27,6 +30,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Song } from "@/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Mock data for demonstration purposes
 const mockUser = {
@@ -115,6 +125,8 @@ export default function MainPage() {
   });
   const [searchResults, setSearchResults] = useState<Song[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const {
     loading,
@@ -252,6 +264,12 @@ export default function MainPage() {
     }
   };
 
+  // Function to handle card click
+  const handleCardClick = (song: Song) => {
+    setSelectedSong(song);
+    setIsDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       {/* Header with user area and logout */}
@@ -285,10 +303,10 @@ export default function MainPage() {
         </div>
       </header>
 
-      <main className="container px-4 py-8 md:py-12">
-        <div className="grid gap-10">
+      <main className="w-full px-4 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto">
           {/* Search Section */}
-          <section className="space-y-4">
+          <section className="space-y-4 mb-10">
             <div className="flex items-center gap-2">
               <Search className="h-6 w-6 text-indigo-600" />
               <h2 className="text-2xl font-bold text-gray-800">Search Songs</h2>
@@ -360,7 +378,7 @@ export default function MainPage() {
           </section>
 
           {/* My Subscriptions Section */}
-          <section className="space-y-4">
+          <section className="space-y-4 mb-16">
             <div className="flex items-center gap-2">
               <Star className="h-6 w-6 text-amber-500" />
               <h2 className="text-2xl font-bold text-gray-800">
@@ -382,7 +400,8 @@ export default function MainPage() {
                 {subscriptions.map((subscription, index) => (
                   <Card
                     key={index}
-                    className="overflow-hidden transition-all duration-300 hover:shadow-xl border-indigo-100 bg-white/80 backdrop-blur-sm group"
+                    className="overflow-hidden transition-all duration-300 hover:shadow-xl border-indigo-100 bg-white/80 backdrop-blur-sm group cursor-pointer"
+                    onClick={() => handleCardClick(subscription)}
                   >
                     <div className="relative h-48 w-full overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
@@ -413,7 +432,10 @@ export default function MainPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveSubscription(subscription)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveSubscription(subscription);
+                        }}
                         className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-300"
                         disabled={loading || isLoading}
                       >
@@ -444,21 +466,21 @@ export default function MainPage() {
           </section>
 
           {/* All Songs Section */}
-          <section className="space-y-4">
+          <section className="space-y-4 mb-10">
             <div className="flex items-center gap-2">
               <Music className="h-6 w-6 text-indigo-600" />
               <h2 className="text-2xl font-bold text-gray-800">
-                All Available Songs
+                Music Gallery
               </h2>
             </div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {mockSongs.map((song, index) => {
-                const subscribed = isAlreadySubscribed(song);
-
-                return (
+              {mockSongs
+                .filter((song) => !isAlreadySubscribed(song))
+                .map((song, index) => (
                   <Card
                     key={index}
-                    className="overflow-hidden transition-all duration-300 hover:shadow-xl border-indigo-100 bg-white/80 backdrop-blur-sm group"
+                    className="overflow-hidden transition-all duration-300 hover:shadow-xl border-indigo-100 bg-white/80 backdrop-blur-sm group cursor-pointer"
+                    onClick={() => handleCardClick(song)}
                   >
                     <div className="relative h-48 w-full overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
@@ -485,34 +507,99 @@ export default function MainPage() {
                     </CardContent>
                     <CardFooter className="p-4 pt-0">
                       <Button
-                        onClick={() => handleSubscribe(song)}
-                        className={`w-full transition-all duration-300 ${
-                          subscribed
-                            ? "bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700"
-                            : "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
-                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubscribe(song);
+                        }}
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
                         disabled={loading || isLoading}
                       >
-                        {subscribed ? (
-                          <>
-                            <X className="mr-2 h-4 w-4" />
-                            Unsubscribe
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Subscribe
-                          </>
-                        )}
+                        <Plus className="mr-2 h-4 w-4" />
+                        Subscribe
                       </Button>
                     </CardFooter>
                   </Card>
-                );
-              })}
+                ))}
             </div>
           </section>
         </div>
       </main>
+
+      {/* Song Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white">
+          {selectedSong && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-gray-800">
+                  {selectedSong.title}
+                </DialogTitle>
+                <DialogDescription className="text-base text-indigo-600">
+                  by {selectedSong.artist}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 py-4">
+                <div className="relative h-48 w-full overflow-hidden rounded-lg">
+                  <Image
+                    src={
+                      selectedSong.image_url ||
+                      "/placeholder.svg?height=100&width=100"
+                    }
+                    alt={selectedSong.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-indigo-600" />
+                    <span className="font-medium text-gray-700">Artist:</span>
+                    <span className="text-gray-800">{selectedSong.artist}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Disc className="h-4 w-4 text-indigo-600" />
+                    <span className="font-medium text-gray-700">Album:</span>
+                    <span className="text-gray-800">{selectedSong.album}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-indigo-600" />
+                    <span className="font-medium text-gray-700">Year:</span>
+                    <span className="text-gray-800">{selectedSong.year}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                {isAlreadySubscribed(selectedSong) ? (
+                  <Button
+                    variant="destructive"
+                    className="w-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveSubscription(selectedSong);
+                      setIsDialogOpen(false);
+                    }}
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Unsubscribe
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubscribe(selectedSong);
+                      setIsDialogOpen(false);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Subscribe
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
