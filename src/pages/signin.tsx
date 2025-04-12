@@ -52,7 +52,7 @@ export default function SignInForm() {
         localStorage.setItem("user_name", result.user_name);
         toast.success(`Welcome, ${result.user_name}! Redirecting...`);
         setTimeout(() => {
-          router.push("/dashboard"); 
+          router.push("/main-page"); 
         }, 1500);
       } else {
         toast.error(result.message || "Invalid credentials, try again.");
