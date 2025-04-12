@@ -13,24 +13,58 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-// import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function RegisterForm() {
-  // const router = useRouter();
+  const router = useRouter();
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const onSubmit = handleSubmit(async (data) => {
-    console.log("Form data : ", data);
-    // Writing the APIs for form registeration and stuff
+    const payload = {
+      email: data.email,
+      password: data.password,
+      username: data.username,
+      action: "register", 
+    };
 
-    toast.success("User Registered sucesfully!");
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        "https://3v0fycd0ac.execute-api.us-east-1.amazonaws.com/prod/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success("User registered successfully! Redirecting to login...");
+        setTimeout(() => {
+          router.push("/signin");
+        }, 1500);
+      } else {
+        toast.error(result.message || "Registration failed.");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error("Something went wrong. Try again later.");
+    } finally {
+      setLoading(false);
+    }
   });
 
   return (
@@ -87,13 +121,13 @@ export default function RegisterForm() {
               <div className="relative">
                 <Input
                   id="password"
-                  type={isPasswordVisible ? "password" : "text"}
+                  type={isPasswordVisible ? "text" : "password"}
                   placeholder="Password"
                   {...register("password", {
                     required: "Password is required",
                     minLength: {
-                      value: 8,
-                      message: "Password must be at least 8 characters",
+                      value: 6,
+                      message: "Password must be at least 6 characters",
                     },
                   })}
                 />
@@ -115,14 +149,14 @@ export default function RegisterForm() {
         </CardContent>
         <CardFooter className="pt-2 flex flex-col items-center justify-center gap-2">
           <div className="text-sm">
-            Already have an account ?{" "}
-            <span>
-              <Link href={"/signin"} replace={true} className="text-blue-400">
-                Login
-              </Link>
-            </span>
+            Already have an account?{" "}
+            <Link href={"/signin"} className="text-blue-400">
+              Login
+            </Link>
           </div>
-          <Button onClick={onSubmit}>Register</Button>
+          <Button onClick={onSubmit} disabled={loading}>
+            {loading ? "Registering..." : "Register"}
+          </Button>
         </CardFooter>
       </Card>
     </div>

@@ -27,32 +27,32 @@ export default function SignInForm() {
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const onSubmit = handleSubmit(async (data) => {
+  const onSubmit = async (data: any) => {
     console.log("Submitting Form Data:", data);
     setLoading(true);
 
+    data.action = "login"; 
+
     try {
       const response = await fetch(
-        "https://fm1elj060k.execute-api.us-east-1.amazonaws.com/prod/login",
+        "https://3v0fycd0ac.execute-api.us-east-1.amazonaws.com/prod/login",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Accept: "application/json",
+            "Accept": "application/json",
           },
-          body: JSON.stringify({
-            email: data.email,
-            password: data.password,
-          }),
+          body: JSON.stringify(data), 
         }
       );
 
       const result = await response.json();
+
       if (response.ok) {
         localStorage.setItem("user_name", result.user_name);
         toast.success(`Welcome, ${result.user_name}! Redirecting...`);
         setTimeout(() => {
-          router.replace("/dashboard");
+          router.push("/dashboard"); 
         }, 1500);
       } else {
         toast.error(result.message || "Invalid credentials, try again.");
@@ -63,7 +63,7 @@ export default function SignInForm() {
     } finally {
       setLoading(false);
     }
-  });
+  };
 
   return (
     <div className="w-screen min-h-screen flex justify-center items-center">
@@ -86,8 +86,8 @@ export default function SignInForm() {
                   required: "Email is required!",
                 })}
               />
-              {errors.email && (
-                <p className="text-red-400">{errors.email.message as string}</p>
+              {errors.email?.message && (
+                <p className="text-red-400">{(errors.email as any).message}</p>
               )}
             </div>
 
@@ -113,10 +113,8 @@ export default function SignInForm() {
                   {isPasswordVisible ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-red-400">
-                  {errors.password.message as string}
-                </p>
+              {errors.password?.message && (
+                <p className="text-red-400">{(errors.password as any).message}</p>
               )}
             </div>
           </div>
@@ -128,9 +126,12 @@ export default function SignInForm() {
               Register
             </Link>
           </div>
-          <Button onClick={onSubmit} disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </Button>
+          {/* Use form submission using handleSubmit */}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </Button>
+          </form>
         </CardFooter>
       </Card>
     </div>
