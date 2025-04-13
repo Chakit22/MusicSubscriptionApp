@@ -17,11 +17,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { useAuth } from "@/context/AuthContext";
 
-export default function RegisterForm() {
+export default function SignInForm() {
   const router = useRouter();
-  const { login } = useAuth();
   const {
     register,
     handleSubmit,
@@ -30,58 +28,61 @@ export default function RegisterForm() {
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const onSubmit = handleSubmit(async (data) => {
-    const payload = {
-      email: data.email,
-      password: data.password,
-      username: data.username,
-      action: "register",
-    };
-
+  const onSubmit = async (data: any) => {
+    console.log("Submitting Form Data:", data);
     setLoading(true);
+    console.log("data", data);
+
+    data.action = "login";
 
     try {
+      console.log(
+        "Lambda URL:",
+        process.env.NEXT_PUBLIC_SIGN_UP_LOGIN_LAMBDA_URL
+      );
       const lambdaUrl =
         process.env.NEXT_PUBLIC_SIGN_UP_LOGIN_LAMBDA_URL ||
         "https://j6mawlyukf.execute-api.us-east-1.amazonaws.com/default/signup_login";
 
-      const response = await axios.post(lambdaUrl, payload, {
+      const response = await axios.post(lambdaUrl, data, {
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
       });
 
       if (response.status === 200) {
-        toast.success("User registered successfully! Redirecting to login...");
+        localStorage.setItem("user_name", response.data.user_name);
+        localStorage.setItem("user_email", data.email);
+        toast.success(`Welcome, ${response.data.user_name}! Redirecting...`);
         setTimeout(() => {
-          router.replace("/signin");
+          router.replace("/main-page");
         }, 1500);
       } else {
-        toast.error(response.data.message || "Registration failed.");
+        toast.error(response.data.message || "Invalid credentials, try again.");
       }
     } catch (error: any) {
-      console.error("Registration error:", error);
+      console.error("Login Error:", error);
       toast.error(
-        error.response?.data?.message ||
-          "Something went wrong. Try again later."
+        error.response?.data?.message || "Server error, please try again later."
       );
     } finally {
       setLoading(false);
     }
-  });
+  };
 
   return (
     <div className="w-screen min-h-screen flex justify-center items-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-      <Card className="p-12 rounded-xl w-[400px] shadow-2xl border-indigo-100">
+      <Card className="p-12 rounded-xl w-[350px] shadow-2xl border-indigo-100">
         <CardHeader>
           <CardTitle className="text-center text-2xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Register
+            Sign In
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col justify-center gap-4">
             {/* Email */}
-            <div className="flex flex-col gap-2 justify-center">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="email" className="text-bold">
                 Email
               </Label>
@@ -93,33 +94,13 @@ export default function RegisterForm() {
                   required: "Email is required!",
                 })}
               />
-              {errors.email && (
-                <p className="text-red-400">{errors.email.message as string}</p>
-              )}
-            </div>
-
-            {/* Username */}
-            <div className="flex flex-col gap-2 justify-center">
-              <Label htmlFor="username" className="text-bold">
-                Username
-              </Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Username"
-                {...register("username", {
-                  required: "Username is required",
-                })}
-              />
-              {errors.username && (
-                <p className="text-red-400">
-                  {errors.username.message as string}
-                </p>
+              {errors.email?.message && (
+                <p className="text-red-400">{(errors.email as any).message}</p>
               )}
             </div>
 
             {/* Password */}
-            <div className="flex flex-col gap-2 justify-center">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="password" className="text-bold">
                 Password
               </Label>
@@ -130,45 +111,44 @@ export default function RegisterForm() {
                   placeholder="Password"
                   {...register("password", {
                     required: "Password is required",
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters",
-                    },
                   })}
                 />
-                <div onClick={() => setIsPasswordVisible(!isPasswordVisible)}>
-                  {isPasswordVisible ? (
-                    <FaEye className="absolute top-1/2 transform -translate-y-1/2 right-2" />
-                  ) : (
-                    <FaEyeSlash className="absolute top-1/2 transform -translate-y-1/2 right-2" />
-                  )}
-                </div>
+                <button
+                  type="button"
+                  className="absolute top-1/2 transform -translate-y-1/2 right-2"
+                  onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                >
+                  {isPasswordVisible ? <FaEyeSlash /> : <FaEye />}
+                </button>
               </div>
-              {errors.password && (
+              {errors.password?.message && (
                 <p className="text-red-400">
-                  {errors.password.message as string}
+                  {(errors.password as any).message}
                 </p>
               )}
             </div>
           </div>
         </CardContent>
-        <CardFooter className="pt-2 flex flex-col items-center justify-center gap-2">
+        <CardFooter className="pt-2 flex flex-col items-center gap-2">
           <div className="text-sm">
-            Already have an account?{" "}
+            New User?{" "}
             <Link
-              href={"/signin"}
+              href="/signup"
               className="text-indigo-600 hover:text-purple-600 transition-colors"
             >
-              Login
+              Register
             </Link>
           </div>
-          <Button
-            onClick={onSubmit}
-            disabled={loading}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md transition-all duration-300"
-          >
-            {loading ? "Registering..." : "Register"}
-          </Button>
+          {/* Use form submission using handleSubmit */}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md transition-all duration-300"
+            >
+              {loading ? "Logging in..." : "Login"}
+            </Button>
+          </form>
         </CardFooter>
       </Card>
     </div>

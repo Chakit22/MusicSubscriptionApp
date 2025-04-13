@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -114,7 +115,8 @@ const mockSongs = [
 
 export default function MainPage() {
   const router = useRouter();
-  const [user] = useState(mockUser);
+  const { userEmail, userName, logout } = useAuth();
+  const [user, setUser] = useState(mockUser);
   const [subscriptions, setSubscriptions] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState({
@@ -135,11 +137,26 @@ export default function MainPage() {
     unsubscribeFromSong,
     checkSubscription,
     getSubscribedSongs,
-  } = useSubscription("chakit@gmail.com");
+  } = useSubscription(userEmail || "");
 
   useEffect(() => {
-    fetchSubscriptions();
-  }, []);
+    // Redirect to login if user data is not available
+    if (!userEmail || !userName) {
+      router.replace("/signin");
+      return;
+    }
+
+    setUser({
+      user_name: userName,
+      email: userEmail,
+    });
+  }, [userEmail, userName, router]);
+
+  useEffect(() => {
+    if (userEmail) {
+      fetchSubscriptions();
+    }
+  }, [userEmail]);
 
   const fetchSubscriptions = async () => {
     try {
@@ -163,8 +180,8 @@ export default function MainPage() {
   };
 
   const handleLogout = () => {
-    // In a real implementation, this would clear the session/auth state
-    router.replace("/signin");
+    // Use the logout function from auth context
+    logout();
   };
 
   const handleRemoveSubscription = async (song: Song) => {

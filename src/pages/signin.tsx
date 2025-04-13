@@ -16,9 +16,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import axios, { AxiosError } from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SignInForm() {
   const router = useRouter();
+  const { login } = useAuth();
   const {
     register,
     handleSubmit,
@@ -26,50 +29,53 @@ export default function SignInForm() {
   } = useForm();
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const onSubmit = async (data: any) => {
     console.log("Submitting Form Data:", data);
     setLoading(true);
+    console.log("data", data);
 
-    data.action = "login"; 
+    data.action = "login";
 
     try {
-      const response = await fetch(
-        "https://3v0fycd0ac.execute-api.us-east-1.amazonaws.com/prod/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-          body: JSON.stringify(data), 
-        }
-      );
+      const lambdaUrl =
+        process.env.NEXT_PUBLIC_SIGN_UP_LOGIN_LAMBDA_URL ||
+        "https://j6mawlyukf.execute-api.us-east-1.amazonaws.com/default/signup_login";
 
-      const result = await response.json();
+      const response = await axios.post(lambdaUrl, data, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
 
-      if (response.ok) {
-        localStorage.setItem("user_name", result.user_name);
-        toast.success(`Welcome, ${result.user_name}! Redirecting...`);
+      if (response.status === 200) {
+        login(data.email, response.data.user_name);
+        toast.success(`Welcome, ${response.data.user_name}! Redirecting...`);
         setTimeout(() => {
-          router.push("/main-page"); 
+          router.replace("/main-page");
         }, 1500);
       } else {
-        toast.error(result.message || "Invalid credentials, try again.");
+        toast.error(response.data.message || "Invalid credentials, try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login Error:", error);
-      toast.error("Server error, please try again later.");
+      toast.error(
+        error.response?.data?.message || "Server error, please try again later."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-screen min-h-screen flex justify-center items-center">
-      <Card className="p-12 rounded-xl w-[350px] shadow-2xl">
+    <div className="w-screen min-h-screen flex justify-center items-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      <Card className="p-12 rounded-xl w-[350px] shadow-2xl border-indigo-100">
         <CardHeader>
-          <CardTitle className="text-center text-2xl">Sign In</CardTitle>
+          <CardTitle className="text-center text-2xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Sign In
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col justify-center gap-4">
@@ -114,7 +120,9 @@ export default function SignInForm() {
                 </button>
               </div>
               {errors.password?.message && (
-                <p className="text-red-400">{(errors.password as any).message}</p>
+                <p className="text-red-400">
+                  {(errors.password as any).message}
+                </p>
               )}
             </div>
           </div>
@@ -122,13 +130,20 @@ export default function SignInForm() {
         <CardFooter className="pt-2 flex flex-col items-center gap-2">
           <div className="text-sm">
             New User?{" "}
-            <Link href="/signup" className="text-blue-400">
+            <Link
+              href="/signup"
+              className="text-indigo-600 hover:text-purple-600 transition-colors"
+            >
               Register
             </Link>
           </div>
           {/* Use form submission using handleSubmit */}
           <form onSubmit={handleSubmit(onSubmit)}>
-            <Button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md transition-all duration-300"
+            >
               {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
