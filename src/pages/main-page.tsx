@@ -243,6 +243,16 @@ export default function MainPage() {
 
   const handleSearch = async () => {
     try {
+      // Check if at least one search parameter is filled
+      const hasSearchParams = Object.values(searchQuery).some(
+        (value) => value.trim() !== ""
+      );
+
+      if (!hasSearchParams) {
+        toast.error("Please enter at least one search parameter");
+        return;
+      }
+
       setIsSearching(true);
       const response = await axios.get("/api/query-songs", {
         params: searchQuery,
@@ -250,9 +260,13 @@ export default function MainPage() {
 
       if (response.data.success) {
         setSearchResults(response.data.songs);
-        toast.success(
-          `Found ${response.data.songs.length} songs matching your criteria`
-        );
+        if (response.data.songs.length === 0) {
+          toast.info("No songs found matching your criteria");
+        } else {
+          toast.success(
+            `Found ${response.data.songs.length} songs matching your criteria`
+          );
+        }
       } else {
         toast.error("Failed to search songs");
       }
@@ -366,10 +380,14 @@ export default function MainPage() {
                 <div className="mt-6 flex justify-end">
                   <Button
                     className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-md transition-all duration-300 transform hover:scale-105"
-                    disabled={true}
+                    disabled={isSearching}
                     onClick={handleSearch}
                   >
-                    <Search className="mr-2 h-4 w-4" />
+                    {isSearching ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
+                    ) : (
+                      <Search className="mr-2 h-4 w-4" />
+                    )}
                     Search
                   </Button>
                 </div>
@@ -473,54 +491,76 @@ export default function MainPage() {
                 Music Gallery
               </h2>
             </div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {mockSongs
-                .filter((song) => !isAlreadySubscribed(song))
-                .map((song, index) => (
-                  <Card
-                    key={index}
-                    className="overflow-hidden transition-all duration-300 hover:shadow-xl border-indigo-100 bg-white/80 backdrop-blur-sm group cursor-pointer"
-                    onClick={() => handleCardClick(song)}
-                  >
-                    <div className="relative h-48 w-full overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
-                      <Image
-                        src={
-                          song.image_url ||
-                          "/placeholder.svg?height=100&width=100"
-                        }
-                        alt={song.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
-                        <h3 className="text-white font-bold text-lg truncate">
-                          {song.title}
-                        </h3>
-                        <p className="text-white/80 text-sm">{song.artist}</p>
+            {isSearching ? (
+              <div className="flex justify-center py-12">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+              </div>
+            ) : searchResults.length === 0 ? (
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-indigo-100">
+                <CardContent className="flex flex-col items-center justify-center p-10">
+                  <div className="bg-indigo-100 p-4 rounded-full mb-4">
+                    <Music className="h-8 w-8 text-indigo-600" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="mt-2 text-xl font-semibold text-gray-800">
+                      No Songs Found
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Try adjusting your search criteria
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                {searchResults
+                  .filter((song) => !isAlreadySubscribed(song))
+                  .map((song, index) => (
+                    <Card
+                      key={index}
+                      className="overflow-hidden transition-all duration-300 hover:shadow-xl border-indigo-100 bg-white/80 backdrop-blur-sm group cursor-pointer"
+                      onClick={() => handleCardClick(song)}
+                    >
+                      <div className="relative h-48 w-full overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+                        <Image
+                          src={
+                            song.image_url ||
+                            "/placeholder.svg?height=100&width=100"
+                          }
+                          alt={song.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+                          <h3 className="text-white font-bold text-lg truncate">
+                            {song.title}
+                          </h3>
+                          <p className="text-white/80 text-sm">{song.artist}</p>
+                        </div>
                       </div>
-                    </div>
-                    <CardContent className="p-4">
-                      <p className="text-xs text-gray-500">
-                        {song.album} • {song.year}
-                      </p>
-                    </CardContent>
-                    <CardFooter className="p-4 pt-0">
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSubscribe(song);
-                        }}
-                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
-                        disabled={loading || isLoading}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Subscribe
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-            </div>
+                      <CardContent className="p-4">
+                        <p className="text-xs text-gray-500">
+                          {song.album} • {song.year}
+                        </p>
+                      </CardContent>
+                      <CardFooter className="p-4 pt-0">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSubscribe(song);
+                          }}
+                          className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                          disabled={loading || isLoading}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Subscribe
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))}
+              </div>
+            )}
           </section>
         </div>
       </main>

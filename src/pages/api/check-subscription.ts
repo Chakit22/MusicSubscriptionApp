@@ -10,6 +10,12 @@ export default async function handler(
     return res.status(405).json({ status: 405, message: "Method not allowed" });
   }
 
+  if (!process.env.SUBSCRIPTIONS_LAMBDA_URL) {
+    return res
+      .status(500)
+      .json({ status: 500, message: "SUBSCRIPTIONS_LAMBDA_URL is not set" });
+  }
+
   try {
     const { year, ...apiParams } = req.query;
 
