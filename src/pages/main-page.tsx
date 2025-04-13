@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
-import { useAuth } from "@/context/AuthContext";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -115,8 +114,8 @@ const mockSongs = [
 
 export default function MainPage() {
   const router = useRouter();
-  const { userEmail, userName, logout } = useAuth();
   const [user, setUser] = useState(mockUser);
+  const [userEmail, setUserEmail] = useState<string>("");
   const [subscriptions, setSubscriptions] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState({
@@ -140,17 +139,25 @@ export default function MainPage() {
   } = useSubscription(userEmail || "");
 
   useEffect(() => {
-    // Redirect to login if user data is not available
-    if (!userEmail || !userName) {
-      router.replace("/signin");
-      return;
-    }
+    // Get user data from localStorage
+    if (typeof window !== "undefined") {
+      const storedUserName = localStorage.getItem("user_name");
+      const storedUserEmail = localStorage.getItem("userEmail");
 
-    setUser({
-      user_name: userName,
-      email: userEmail,
-    });
-  }, [userEmail, userName, router]);
+      if (!storedUserEmail) {
+        // Redirect to login if user data is not available
+        router.replace("/signin");
+        return;
+      }
+
+      setUser({
+        user_name: storedUserName || "User",
+        email: storedUserEmail,
+      });
+
+      setUserEmail(storedUserEmail);
+    }
+  }, [router]);
 
   useEffect(() => {
     if (userEmail) {
@@ -180,8 +187,10 @@ export default function MainPage() {
   };
 
   const handleLogout = () => {
-    // Use the logout function from auth context
-    logout();
+    // Clear the user session data from localStorage
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("user_name");
+    router.replace("/signin");
   };
 
   const handleRemoveSubscription = async (song: Song) => {

@@ -1,18 +1,20 @@
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import RegisterForm from "./signup";
-import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
   const router = useRouter();
-  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
-    // If user is logged in, redirect to main-page
-    if (isLoggedIn) {
-      router.replace("/main-page");
+    // Check if user is already logged in
+    if (typeof window !== "undefined") {
+      const userEmail = localStorage.getItem("userEmail");
+      if (userEmail) {
+        // If user is logged in, redirect to main-page
+        router.replace("/main-page");
+      }
     }
-  }, [isLoggedIn, router]);
+  }, [router]);
 
   return <RegisterForm />;
 }

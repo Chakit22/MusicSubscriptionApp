@@ -17,11 +17,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios, { AxiosError } from "axios";
-import { useAuth } from "@/context/AuthContext";
 
 export default function SignInForm() {
   const router = useRouter();
-  const { login } = useAuth();
   const {
     register,
     handleSubmit,
@@ -51,7 +49,9 @@ export default function SignInForm() {
       });
 
       if (response.status === 200) {
-        login(data.email, response.data.user_name);
+        // Store the username and email in localStorage
+        localStorage.setItem("user_name", response.data.user_name);
+        localStorage.setItem("userEmail", data.email);
         toast.success(`Welcome, ${response.data.user_name}! Redirecting...`);
         setTimeout(() => {
           router.replace("/main-page");

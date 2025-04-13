@@ -17,11 +17,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { useAuth } from "@/context/AuthContext";
 
 export default function RegisterForm() {
   const router = useRouter();
-  const { login } = useAuth();
   const {
     register,
     handleSubmit,
@@ -52,6 +50,8 @@ export default function RegisterForm() {
       });
 
       if (response.status === 200) {
+        // Store username in localStorage for main page to use
+        localStorage.setItem("user_name", data.username);
         toast.success("User registered successfully! Redirecting to login...");
         setTimeout(() => {
           router.replace("/signin");
