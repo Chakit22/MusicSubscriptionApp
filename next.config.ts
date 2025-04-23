@@ -4,7 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: true,
   images: {
-    domains: ["raw.githubusercontent.com"],
+    domains: [
+      "raw.githubusercontent.com",
+      "music-images-2025.s3.amazonaws.com",
+    ],
   },
 };
 
