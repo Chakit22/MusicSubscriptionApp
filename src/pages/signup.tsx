@@ -39,9 +39,7 @@ export default function RegisterForm() {
     setLoading(true);
 
     try {
-      const lambdaUrl =
-        process.env.NEXT_PUBLIC_SIGN_UP_LOGIN_LAMBDA_URL ||
-        "https://j6mawlyukf.execute-api.us-east-1.amazonaws.com/default/signup_login";
+      const lambdaUrl = process.env.NEXT_PUBLIC_SIGN_UP_LOGIN_LAMBDA_URL!;
 
       const response = await axios.post(lambdaUrl, payload, {
         headers: {
