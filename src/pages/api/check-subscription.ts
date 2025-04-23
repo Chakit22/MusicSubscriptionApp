@@ -17,7 +17,7 @@ export default async function handler(
   }
 
   try {
-    const { year, ...apiParams } = req.query;
+    const { ...apiParams } = req.query;
 
     const response = await axios.get(
       `${process.env.SUBSCRIPTIONS_LAMBDA_URL}/check-subscription`,

@@ -7,7 +7,6 @@ import {
   LogOut,
   X,
   Plus,
-  Check,
   Search,
   Music,
   Headphones,
@@ -20,13 +19,7 @@ import { toast } from "sonner";
 import axios from "axios";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Song } from "@/types";
@@ -45,72 +38,72 @@ const mockUser = {
 };
 
 // Mock songs data
-const mockSongs = [
-  {
-    title: "Bohemian Rhapsody",
-    artist: "Queen",
-    year: "1975",
-    album: "A Night at the Opera",
-    image_url:
-      "https://upload.wikimedia.org/wikipedia/en/4/4d/Queen_A_Night_At_The_Opera.png",
-  },
-  {
-    title: "Billie Jean",
-    artist: "Michael Jackson",
-    year: "1982",
-    album: "Thriller",
-    image_url:
-      "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png",
-  },
-  {
-    title: "Sweet Child o' Mine",
-    artist: "Guns N' Roses",
-    year: "1987",
-    album: "Appetite for Destruction",
-    image_url:
-      "https://upload.wikimedia.org/wikipedia/en/6/60/GunsnRosesAppetiteforDestructionalbumcover.jpg",
-  },
-  {
-    title: "Hotel California",
-    artist: "Eagles",
-    year: "1976",
-    album: "Hotel California",
-    image_url:
-      "https://upload.wikimedia.org/wikipedia/en/4/49/Hotelcalifornia.jpg",
-  },
-  {
-    title: "Imagine",
-    artist: "John Lennon",
-    year: "1971",
-    album: "Imagine",
-    image_url:
-      "https://upload.wikimedia.org/wikipedia/en/6/69/ImagineCover.jpg",
-  },
-  {
-    title: "Stairway to Heaven",
-    artist: "Led Zeppelin",
-    year: "1971",
-    album: "Led Zeppelin IV",
-    image_url:
-      "https://upload.wikimedia.org/wikipedia/en/2/26/Led_Zeppelin_-_Led_Zeppelin_IV.jpg",
-  },
-  {
-    title: "Smells Like Teen Spirit",
-    artist: "Nirvana",
-    year: "1991",
-    album: "Nevermind",
-    image_url:
-      "https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg",
-  },
-  {
-    title: "Hey Jude",
-    artist: "The Beatles",
-    year: "1968",
-    album: "Hey Jude",
-    image_url:
-      "https://upload.wikimedia.org/wikipedia/en/3/3d/Beatles_-_Hey_Jude_Single.jpg",
-  },
-];
+// const mockSongs = [
+//   {
+//     title: "Bohemian Rhapsody",
+//     artist: "Queen",
+//     year: "1975",
+//     album: "A Night at the Opera",
+//     image_url:
+//       "https://upload.wikimedia.org/wikipedia/en/4/4d/Queen_A_Night_At_The_Opera.png",
+//   },
+//   {
+//     title: "Billie Jean",
+//     artist: "Michael Jackson",
+//     year: "1982",
+//     album: "Thriller",
+//     image_url:
+//       "https://upload.wikimedia.org/wikipedia/en/5/55/Michael_Jackson_-_Thriller.png",
+//   },
+//   {
+//     title: "Sweet Child o' Mine",
+//     artist: "Guns N' Roses",
+//     year: "1987",
+//     album: "Appetite for Destruction",
+//     image_url:
+//       "https://upload.wikimedia.org/wikipedia/en/6/60/GunsnRosesAppetiteforDestructionalbumcover.jpg",
+//   },
+//   {
+//     title: "Hotel California",
+//     artist: "Eagles",
+//     year: "1976",
+//     album: "Hotel California",
+//     image_url:
+//       "https://upload.wikimedia.org/wikipedia/en/4/49/Hotelcalifornia.jpg",
+//   },
+//   {
+//     title: "Imagine",
+//     artist: "John Lennon",
+//     year: "1971",
+//     album: "Imagine",
+//     image_url:
+//       "https://upload.wikimedia.org/wikipedia/en/6/69/ImagineCover.jpg",
+//   },
+//   {
+//     title: "Stairway to Heaven",
+//     artist: "Led Zeppelin",
+//     year: "1971",
+//     album: "Led Zeppelin IV",
+//     image_url:
+//       "https://upload.wikimedia.org/wikipedia/en/2/26/Led_Zeppelin_-_Led_Zeppelin_IV.jpg",
+//   },
+//   {
+//     title: "Smells Like Teen Spirit",
+//     artist: "Nirvana",
+//     year: "1991",
+//     album: "Nevermind",
+//     image_url:
+//       "https://upload.wikimedia.org/wikipedia/en/b/b7/NirvanaNevermindalbumcover.jpg",
+//   },
+//   {
+//     title: "Hey Jude",
+//     artist: "The Beatles",
+//     year: "1968",
+//     album: "Hey Jude",
+//     image_url:
+//       "https://upload.wikimedia.org/wikipedia/en/3/3d/Beatles_-_Hey_Jude_Single.jpg",
+//   },
+// ];
 
 export default function MainPage() {
   const router = useRouter();
@@ -134,7 +127,6 @@ export default function MainPage() {
     error: subscriptionError,
     subscribeToSong,
     unsubscribeFromSong,
-    checkSubscription,
     getSubscribedSongs,
   } = useSubscription(userEmail || "");
 
