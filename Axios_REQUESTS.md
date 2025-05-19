@@ -1,5 +1,14 @@
 # Understanding Axios Requests and Responses
 
+## JSON Request Formats
+
+Here, when you pass the data as a payload then as we mentioned that type of content is "application/json" then it is converted into JSON.
+If I am passing an array of values it will be converted like
+
+JSON.stringify(["s", "d"])
+
+This will convert into "["s", "d"]" which is JSON nothing but string.
+
 ## JSON Response Formats
 
 JSON data can be in two different formats:
