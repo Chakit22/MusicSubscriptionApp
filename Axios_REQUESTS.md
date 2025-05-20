@@ -83,6 +83,8 @@ interface AxiosResponse<T = any, D = any> {
 }
 ```
 
+`res.status(201).json({message: "Hey there"}); Here, status is mapped to the status in the axios response above, and response.data maps the whole json response`
+
 Important points:
 
 - `response.data` contains whatever was sent by the server's `res.json()`
